@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/recruiters/', include('recruiters.urls')),
     path('api/jobs/',       include('jobs.urls')),
     path('api/applications/', include('applications.urls')),
+     path('api/admin/',        include('admin_panel.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

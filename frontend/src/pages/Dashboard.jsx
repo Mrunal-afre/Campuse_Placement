@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../api/auth';
@@ -5,6 +6,13 @@ import { logoutUser } from '../api/auth';
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect admin users
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    }
+  }, [user, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -81,15 +89,15 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* My Applications */}
+              {/* My Applications → Tracker */}
               <div
-                onClick={() => navigate('/my-applications')}
+                onClick={() => navigate('/tracker')}
                 className="bg-yellow-50 rounded-xl p-5 border border-yellow-100 cursor-pointer hover:shadow-md transition"
               >
                 <div className="text-3xl mb-2">📋</div>
                 <h3 className="font-semibold text-gray-800">My Applications</h3>
                 <p className="text-sm text-gray-500">
-                  Track your applications
+                  Track your job applications
                 </p>
               </div>
 
@@ -139,6 +147,20 @@ export default function Dashboard() {
                 </h3>
                 <p className="text-sm text-gray-500">
                   Find the right candidates
+                </p>
+              </div>
+
+              {/* Recruiter Tracker */}
+              <div
+                onClick={() => navigate('/recruiter/tracker')}
+                className="bg-yellow-50 rounded-xl p-5 border border-yellow-100 cursor-pointer hover:shadow-md transition"
+              >
+                <div className="text-3xl mb-2">📊</div>
+                <h3 className="font-semibold text-gray-800">
+                  Application Tracker
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Track student applications
                 </p>
               </div>
 

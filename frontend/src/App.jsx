@@ -12,6 +12,9 @@ import JobDetail        from './pages/JobDetail';
 import MyApplications   from './pages/MyApplications';
 import BrowseStudents   from './pages/BrowseStudents';
 import JobApplicants    from './pages/JobApplicants';
+import ApplicationTracker from './pages/ApplicationTracker';
+import RecruiterTracker   from './pages/RecruiterTracker';
+import AdminDashboard from './pages/AdminDashboard';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -71,6 +74,18 @@ function App() {
 
           <Route path="/students/browse" element={
             <PrivateRoute><BrowseStudents /></PrivateRoute>} />
+
+          <Route path="/admin" element={
+  <PrivateRoute><AdminDashboard /></PrivateRoute>
+} />
+
+          <Route path="/tracker" element={
+  <PrivateRoute><ApplicationTracker /></PrivateRoute>
+} />
+
+<Route path="/recruiter/tracker" element={
+  <PrivateRoute><RecruiterTracker /></PrivateRoute>
+} />
 
           {/* ── Default ── */}
           <Route path="*" element={<Navigate to="/login" replace />} />

@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'recruiters',
     'jobs', 
     'applications',
+        'admin_panel',   
 ]
 
 MIDDLEWARE = [

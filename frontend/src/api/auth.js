@@ -60,3 +60,16 @@ export const getAllStudents = (filters = '') =>
 // Bulk update
 export const bulkUpdateStatus = (data) =>
   API.post('/applications/bulk-update-status/', data);
+
+// Tracking & Stats
+export const getStudentStats    = ()   => API.get('/applications/student-stats/');
+export const getRecruiterStats  = ()   => API.get('/applications/recruiter-stats/');
+export const getAppTimeline     = (id) => API.get(`/applications/${id}/timeline/`);
+
+// Admin API
+export const getAdminStats    = ()         => API.get('/admin/stats/');
+export const getAdminUsers    = (q = '')   => API.get(`/admin/users/${q}`);
+export const updateUserAdmin  = (id, data) => API.put(`/admin/users/${id}/`, data);
+export const getAdminJobs     = ()         => API.get('/admin/jobs/');
+export const deleteJobAdmin   = (id)       => API.delete(`/admin/jobs/${id}/`);
+export const getPendingUsers  = ()         => API.get('/admin/pending/');

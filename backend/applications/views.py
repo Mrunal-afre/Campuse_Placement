@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Count
 from .models import Application
 from .serializers import (
     ApplySerializer,
@@ -299,4 +300,199 @@ class BulkUpdateStatusView(APIView):
         return Response({
             'message': f'{updated} application(s) updated to "{new_status}".',
             'updated_count': updated
+        })
+
+class StudentDashboardStatsView(APIView):
+    """
+    GET /api/applications/student-stats/
+    Student sees summary stats of all their applications.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Students only.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        apps = Application.objects.filter(student=request.user)
+
+        # Count per status
+        status_counts = apps.values('status').annotate(
+            count=Count('id')
+        )
+
+        counts = {
+            'applied':      0,
+            'under_review': 0,
+            'shortlisted':  0,
+            'selected':     0,
+            'rejected':     0,
+            'withdrawn':    0,
+        }
+        for item in status_counts:
+            counts[item['status']] = item['count']
+
+        return Response({
+            'total_applied':   apps.count(),
+            'shortlisted':     counts['shortlisted'],
+            'selected':        counts['selected'],
+            'rejected':        counts['rejected'],
+            'under_review':    counts['under_review'],
+            'pending':         counts['applied'] + counts['under_review'],
+            'status_breakdown': counts,
+            # Recent 5 applications with full detail
+            'recent_applications': StudentApplicationSerializer(
+                apps.order_by('-applied_at')[:5],
+                many=True,
+                context={'request': request}
+            ).data
+        })
+
+
+class RecruiterDashboardStatsView(APIView):
+    """
+    GET /api/applications/recruiter-stats/
+    Recruiter sees stats across ALL their job postings.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'recruiter':
+            return Response(
+                {'error': 'Recruiters only.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        from jobs.models import JobPosting
+
+        # All jobs by this recruiter
+        my_jobs = JobPosting.objects.filter(recruiter=request.user)
+
+        # All applications across all their jobs
+        all_apps = Application.objects.filter(
+            job__recruiter=request.user
+        )
+
+        # Per-status counts
+        status_counts = all_apps.values('status').annotate(count=Count('id'))
+        counts = {
+            'applied': 0, 'under_review': 0, 'shortlisted': 0,
+            'selected': 0, 'rejected': 0,
+        }
+        for item in status_counts:
+            if item['status'] in counts:
+                counts[item['status']] = item['count']
+
+        # Per-job breakdown
+        job_breakdown = []
+        for job in my_jobs:
+            job_apps = all_apps.filter(job=job)
+            job_breakdown.append({
+                'job_id':      job.id,
+                'job_title':   job.title,
+                'is_active':   job.is_active,
+                'total':       job_apps.count(),
+                'shortlisted': job_apps.filter(status='shortlisted').count(),
+                'selected':    job_apps.filter(status='selected').count(),
+                'rejected':    job_apps.filter(status='rejected').count(),
+            })
+
+        return Response({
+            'total_jobs':       my_jobs.count(),
+            'active_jobs':      my_jobs.filter(is_active=True).count(),
+            'total_applicants': all_apps.count(),
+            'shortlisted':      counts['shortlisted'],
+            'selected':         counts['selected'],
+            'status_breakdown': counts,
+            'job_breakdown':    job_breakdown,
+        })
+
+
+class ApplicationTimelineView(APIView):
+    """
+    GET /api/applications/<id>/timeline/
+    Full timeline of a single application — student and recruiter use this.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, application_id):
+        try:
+            # Student can only see their own; recruiter can see their job's apps
+            if request.user.role == 'student':
+                app = Application.objects.get(
+                    id=application_id,
+                    student=request.user
+                )
+            elif request.user.role == 'recruiter':
+                app = Application.objects.get(
+                    id=application_id,
+                    job__recruiter=request.user
+                )
+            else:
+                app = Application.objects.get(id=application_id)
+
+        except Application.DoesNotExist:
+            return Response(
+                {'error': 'Application not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Build a visual pipeline — all steps in order
+        all_steps = [
+            'applied',
+            'under_review',
+            'shortlisted',
+            'selected',
+        ]
+
+        # Figure out which step we are currently on
+        current_index = 0
+        if app.status in all_steps:
+            current_index = all_steps.index(app.status)
+        elif app.status == 'rejected':
+            current_index = -1   # special: rejected
+        elif app.status == 'withdrawn':
+            current_index = -2   # special: withdrawn
+
+        pipeline = []
+        for i, step in enumerate(all_steps):
+            if current_index == -1 or current_index == -2:
+                # Rejected or withdrawn — only first step is done
+                pipeline.append({
+                    'step':   step,
+                    'state':  'completed' if i == 0 else 'pending',
+                    'label':  step.replace('_', ' ').title(),
+                })
+            elif i < current_index:
+                pipeline.append({
+                    'step':  step,
+                    'state': 'completed',
+                    'label': step.replace('_', ' ').title(),
+                })
+            elif i == current_index:
+                pipeline.append({
+                    'step':  step,
+                    'state': 'current',
+                    'label': step.replace('_', ' ').title(),
+                })
+            else:
+                pipeline.append({
+                    'step':  step,
+                    'state': 'pending',
+                    'label': step.replace('_', ' ').title(),
+                })
+
+        return Response({
+            'application_id': app.id,
+            'job_title':      app.job.title,
+            'company_name':   app.job.recruiter.recruiter_profile.company_name
+                              if hasattr(app.job.recruiter, 'recruiter_profile')
+                              else '',
+            'current_status': app.status,
+            'applied_at':     app.applied_at,
+            'updated_at':     app.updated_at,
+            'cover_letter':   app.cover_letter,
+            'pipeline':       pipeline,
         })
