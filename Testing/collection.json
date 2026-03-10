@@ -1,0 +1,567 @@
+{
+	"info": {
+		"_postman_id": "campus-placement-collection-001",
+		"name": "Campus Placement API",
+		"description": "Complete API collection for Campus Placement Management Platform.\n\n## How to use:\n1. Import the Environment file first\n2. Import this Collection file\n3. Select 'Campus Placement - Local Environment' from the environment dropdown (top right)\n4. Start with MODULE 1 - Auth folder\n5. After login, the ACCESS_TOKEN auto-saves — all other requests use it automatically!\n\n## Modules covered:\n- Module 1: Authentication (Register, Login, Me, Logout)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "MODULE 1 — Authentication",
+			"description": "All authentication related APIs.\nRun them IN ORDER: Register → (approve in admin) → Login → Me → Logout",
+			"item": [
+				{
+					"name": "1.1 Register Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Automatically check if registration was successful",
+									"pm.test('Status is 201 Created', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has message field', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('message');",
+									"});",
+									"",
+									"pm.test('User role is student', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.user.role).to.eql('student');",
+									"});",
+									"",
+									"pm.test('is_approved is false by default', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.user.is_approved).to.eql(false);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{STUDENT_EMAIL}}\",\n    \"full_name\": \"Rahul Sharma\",\n    \"role\": \"student\",\n    \"password\": \"{{STUDENT_PASSWORD}}\",\n    \"password2\": \"{{STUDENT_PASSWORD}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "register", ""]
+						},
+						"description": "Register a new STUDENT account.\n\n✅ Expected: 201 Created\n✅ is_approved will be FALSE — admin must approve first\n\n⚠️ After running this, go to:\nhttp://localhost:8000/admin/ → Custom Users → tick Is Approved → Save\n\nThen run request 1.3 Login Student"
+					},
+					"response": [
+						{
+							"name": "Success - Student Registered",
+							"originalRequest": {
+								"method": "POST",
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"student1@college.com\",\n    \"full_name\": \"Rahul Sharma\",\n    \"role\": \"student\",\n    \"password\": \"Test@1234\",\n    \"password2\": \"Test@1234\"\n}"
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"message\": \"Registration successful! Wait for admin approval.\",\n    \"user\": {\n        \"id\": 2,\n        \"email\": \"student1@college.com\",\n        \"full_name\": \"Rahul Sharma\",\n        \"role\": \"student\",\n        \"is_approved\": false,\n        \"created_at\": \"2026-03-09T10:00:00Z\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "1.2 Register Recruiter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 201 Created', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('User role is recruiter', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.user.role).to.eql('recruiter');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{RECRUITER_EMAIL}}\",\n    \"full_name\": \"Priya Mehta\",\n    \"role\": \"recruiter\",\n    \"password\": \"{{RECRUITER_PASSWORD}}\",\n    \"password2\": \"{{RECRUITER_PASSWORD}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "register", ""]
+						},
+						"description": "Register a new RECRUITER account.\n\n✅ Expected: 201 Created\n⚠️ Remember to approve in admin panel before testing login!"
+					},
+					"response": [
+						{
+							"name": "Success - Recruiter Registered",
+							"originalRequest": {
+								"method": "POST",
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\": \"recruiter1@company.com\",\n    \"full_name\": \"Priya Mehta\",\n    \"role\": \"recruiter\",\n    \"password\": \"Test@1234\",\n    \"password2\": \"Test@1234\"\n}"
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"message\": \"Registration successful! Wait for admin approval.\",\n    \"user\": {\n        \"id\": 3,\n        \"email\": \"recruiter1@company.com\",\n        \"full_name\": \"Priya Mehta\",\n        \"role\": \"recruiter\",\n        \"is_approved\": false,\n        \"created_at\": \"2026-03-09T10:01:00Z\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "1.3 Register - Validation Errors (Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 400 Bad Request', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Password mismatch error returned', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(JSON.stringify(json)).to.include('Passwords do not match');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@college.com\",\n    \"full_name\": \"Test User\",\n    \"role\": \"student\",\n    \"password\": \"Test@1234\",\n    \"password2\": \"WrongPassword\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/register/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "register", ""]
+						},
+						"description": "Test that password mismatch is rejected.\n\n✅ Expected: 400 Bad Request\n✅ Error message: 'Passwords do not match'"
+					},
+					"response": [
+						{
+							"name": "Error - Passwords Don't Match",
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"non_field_errors\": [\n        \"Passwords do not match.\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "1.4 Login - Before Approval (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 403 Forbidden', function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test('Pending approval message shown', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.error).to.include('pending admin approval');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{STUDENT_EMAIL}}\",\n    \"password\": \"{{STUDENT_PASSWORD}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login", ""]
+						},
+						"description": "Try to login BEFORE admin approves the account.\n\n✅ Expected: 403 Forbidden\n✅ Message: 'Your account is pending admin approval'\n\nThis proves the approval security is working!\n\n⚠️ Now go approve the student:\nhttp://localhost:8000/admin/ → Custom Users → tick Is Approved → Save"
+					},
+					"response": [
+						{
+							"name": "Error - Not Approved Yet",
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"error\": \"Your account is pending admin approval.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "1.5 Login Student (After Approval) ⭐",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Access token received', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.tokens).to.have.property('access');",
+									"    pm.expect(json.tokens).to.have.property('refresh');",
+									"});",
+									"",
+									"// ⭐ AUTO-SAVE tokens to environment variables",
+									"// This means you don't need to copy-paste tokens manually!",
+									"var json = pm.response.json();",
+									"if (json.tokens) {",
+									"    pm.environment.set('ACCESS_TOKEN', json.tokens.access);",
+									"    pm.environment.set('REFRESH_TOKEN', json.tokens.refresh);",
+									"    console.log('✅ Tokens saved to environment automatically!');",
+									"}",
+									"",
+									"pm.test('User data returned', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json.user).to.have.property('email');",
+									"    pm.expect(json.user).to.have.property('role');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{STUDENT_EMAIL}}\",\n    \"password\": \"{{STUDENT_PASSWORD}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login", ""]
+						},
+						"description": "Login with an APPROVED student account.\n\n✅ Expected: 200 OK\n✅ Returns access + refresh tokens\n✅ TOKENS ARE AUTO-SAVED to environment — no copy-pasting needed!\n\nAfter this runs successfully, request 1.7 (Get My Profile) will work automatically."
+					},
+					"response": [
+						{
+							"name": "Success - Login",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"message\": \"Login successful!\",\n    \"tokens\": {\n        \"refresh\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n        \"access\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n    },\n    \"user\": {\n        \"id\": 2,\n        \"email\": \"student1@college.com\",\n        \"full_name\": \"Rahul Sharma\",\n        \"role\": \"student\",\n        \"is_approved\": true,\n        \"created_at\": \"2026-03-09T10:00:00Z\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "1.6 Login Recruiter ⭐",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Save recruiter tokens (overwrites student token)",
+									"// Switch back to student login if testing student APIs",
+									"var json = pm.response.json();",
+									"if (json.tokens) {",
+									"    pm.environment.set('ACCESS_TOKEN', json.tokens.access);",
+									"    pm.environment.set('REFRESH_TOKEN', json.tokens.refresh);",
+									"    console.log('✅ Recruiter tokens saved!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{RECRUITER_EMAIL}}\",\n    \"password\": \"{{RECRUITER_PASSWORD}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login", ""]
+						},
+						"description": "Login with an APPROVED recruiter account.\n\n✅ Expected: 200 OK\n✅ Tokens auto-saved to environment\n\n⚠️ Note: This will overwrite the student token in environment.\nRun 1.5 again to switch back to student."
+					},
+					"response": []
+				},
+				{
+					"name": "1.7 Get My Profile (Protected Route)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Email is returned', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('email');",
+									"});",
+									"",
+									"pm.test('Role is returned', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('role');",
+									"    console.log('Logged in as:', json.role, '-', json.full_name);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "Token is auto-filled from environment after login ✅"
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/me/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "me", ""]
+						},
+						"description": "Get the currently logged-in user's info.\n\n✅ Expected: 200 OK with user details\n❌ If you get 401: Run login request first (1.5 or 1.6)\n\nThe Authorization header is AUTO-FILLED from your environment token — no manual copy-paste needed!"
+					},
+					"response": [
+						{
+							"name": "Success - My Profile",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 2,\n    \"email\": \"student1@college.com\",\n    \"full_name\": \"Rahul Sharma\",\n    \"role\": \"student\",\n    \"is_approved\": true,\n    \"created_at\": \"2026-03-09T10:00:00Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "1.8 Get Profile - No Token (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 401 Unauthorized', function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test('Authentication error returned', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('detail');",
+									"    console.log('Security check passed: Unauthenticated access blocked');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/me/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "me", ""]
+						},
+						"description": "Try to access /me/ WITHOUT a token.\n\n✅ Expected: 401 Unauthorized\n\nThis proves your protected routes are working correctly — unauthenticated users cannot access data."
+					},
+					"response": [
+						{
+							"name": "Error - No Token",
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"detail\": \"Authentication credentials were not provided.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "1.9 Login - Wrong Password (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 401 Unauthorized', function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test('Invalid credentials error', function () {",
+									"    var json = pm.response.json();",
+									"    pm.expect(json).to.have.property('error');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{STUDENT_EMAIL}}\",\n    \"password\": \"WrongPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/login/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "login", ""]
+						},
+						"description": "Try to login with wrong password.\n\n✅ Expected: 401 Unauthorized\n✅ Error: 'Invalid email or password'"
+					},
+					"response": [
+						{
+							"name": "Error - Wrong Password",
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"error\": \"Invalid email or password.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "1.10 Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Clear tokens from environment after logout",
+									"pm.environment.set('ACCESS_TOKEN', '');",
+									"pm.environment.set('REFRESH_TOKEN', '');",
+									"console.log('✅ Tokens cleared from environment');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{REFRESH_TOKEN}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/logout/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "logout", ""]
+						},
+						"description": "Logout the current user. This blacklists the refresh token.\n\n✅ Expected: 200 OK\n✅ Tokens auto-cleared from environment\n\nAfter this, running request 1.7 will give 401 — proving logout worked!"
+					},
+					"response": [
+						{
+							"name": "Success - Logged Out",
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"message\": \"Logged out successfully.\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📋 HOW TO USE THIS COLLECTION",
+			"item": [
+				{
+					"name": "READ ME FIRST 👆",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/me/",
+							"host": ["{{BASE_URL}}"],
+							"path": ["api", "auth", "me", ""]
+						},
+						"description": "# 📋 Campus Placement API — Postman Guide\n\n## ✅ Setup Steps (do this once)\n1. Import `Campus_Placement_Environment.postman_environment.json`\n2. Import `Campus_Placement_API.postman_collection.json`\n3. Top-right dropdown → select **Campus Placement - Local Environment**\n4. Make sure Django is running: `python manage.py runserver`\n\n---\n\n## 🔑 About Tokens (IMPORTANT)\nWhen you run **1.5 Login Student**, the access token is **automatically saved** to your environment.\n\nAll protected requests (like 1.7 Get My Profile) use `{{ACCESS_TOKEN}}` which is filled automatically.\n\nYou NEVER need to copy-paste tokens manually! ✅\n\n---\n\n## 🧪 Recommended Test Order\n```\n1.1 Register Student\n1.2 Register Recruiter\n1.3 Register Validation Test (passwords don't match)\n1.4 Login Before Approval (should get 403)\n   → Go approve in admin: http://localhost:8000/admin/\n1.5 Login Student ⭐ (tokens auto-saved)\n1.7 Get My Profile (uses auto-saved token)\n1.8 Get Profile No Token (should get 401)\n1.9 Login Wrong Password (should get 401)\n1.10 Logout (tokens auto-cleared)\n1.7 Get My Profile again (should get 401 now)\n```\n\n---\n\n## ❌ Common Errors\n| Error | Cause | Fix |\n|-------|-------|-----|\n| 401 on /me/ | Not logged in | Run 1.5 Login first |\n| 403 on Login | Not approved | Approve in admin panel |\n| Connection refused | Django not running | Run `python manage.py runserver` |\n| 400 on Register | Email already exists | Use a different email |"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:8000"
+		}
+	]
+}
