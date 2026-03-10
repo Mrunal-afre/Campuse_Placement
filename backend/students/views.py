@@ -66,35 +66,48 @@ class StudentPublicProfileView(APIView):
 
 
 class AllStudentsView(APIView):
-    """Recruiters can browse all student profiles"""
+    """Recruiters browse and filter all student profiles"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """GET /api/students/all/ — list all students (recruiters only)"""
-
         if request.user.role not in ['recruiter', 'admin']:
             return Response(
                 {'error': 'Only recruiters and admins can view all students.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        profiles = StudentProfile.objects.select_related('user').all()
+        profiles = StudentProfile.objects.select_related('user').filter(
+            user__is_approved=True,
+            user__is_active=True
+        )
 
-        # Optional filters from URL query params
-        # Example: /api/students/all/?branch=cs&min_cgpa=7.5
-        branch   = request.query_params.get('branch')
-        min_cgpa = request.query_params.get('min_cgpa')
-        skill    = request.query_params.get('skill')
+        # ── Filters from URL query params ──────────────────────────
+        # Example: /api/students/all/?branch=cs&min_cgpa=7&skill=python
+        branch      = request.query_params.get('branch')
+        min_cgpa    = request.query_params.get('min_cgpa')
+        max_cgpa    = request.query_params.get('max_cgpa')
+        skill       = request.query_params.get('skill')
+        year        = request.query_params.get('year_of_passing')
+        search      = request.query_params.get('search')   # search by name
 
         if branch:
             profiles = profiles.filter(branch=branch)
         if min_cgpa:
             profiles = profiles.filter(cgpa__gte=min_cgpa)
+        if max_cgpa:
+            profiles = profiles.filter(cgpa__lte=max_cgpa)
         if skill:
+            # icontains = case-insensitive search inside the skills text
             profiles = profiles.filter(skills__icontains=skill)
+        if year:
+            profiles = profiles.filter(year_of_passing=year)
+        if search:
+            profiles = profiles.filter(user__full_name__icontains=search)
 
-        serializer = StudentProfileSerializer(profiles, many=True)
+        serializer = StudentProfileSerializer(
+            profiles, many=True, context={'request': request}
+        )
         return Response({
-            'count': profiles.count(),
+            'count':    profiles.count(),
             'students': serializer.data
         })

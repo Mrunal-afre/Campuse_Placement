@@ -6,6 +6,7 @@ from .views import (
     CheckApplicationView,
     JobApplicantsView,
     UpdateApplicationStatusView,
+    BulkUpdateStatusView, 
 )
 
 urlpatterns = [
@@ -35,4 +36,8 @@ urlpatterns = [
     path('<int:application_id>/update-status/',
          UpdateApplicationStatusView.as_view(),
          name='update-status'),
+
+    path('bulk-update-status/',              # ← ADD THIS
+         BulkUpdateStatusView.as_view(),
+         name='bulk-update-status'),
 ]

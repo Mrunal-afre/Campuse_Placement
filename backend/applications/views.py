@@ -258,3 +258,45 @@ class UpdateApplicationStatusView(APIView):
             'message': f'Application status updated to "{app.status}".',
             'application': serializer.data
         })
+
+class BulkUpdateStatusView(APIView):
+    """
+    POST /api/applications/bulk-update-status/
+    Recruiter updates status of MULTIPLE applications at once.
+    e.g. shortlist 5 students in one click
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'recruiter':
+            return Response(
+                {'error': 'Only recruiters can update application status.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        application_ids = request.data.get('application_ids', [])
+        new_status      = request.data.get('status')
+
+        if not application_ids or not new_status:
+            return Response(
+                {'error': 'application_ids and status are required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        valid_statuses = ['applied', 'under_review', 'shortlisted', 'selected', 'rejected']
+        if new_status not in valid_statuses:
+            return Response(
+                {'error': f'Invalid status. Choose from: {", ".join(valid_statuses)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Only update applications belonging to this recruiter's jobs
+        updated = Application.objects.filter(
+            id__in=application_ids,
+            job__recruiter=request.user
+        ).update(status=new_status)
+
+        return Response({
+            'message': f'{updated} application(s) updated to "{new_status}".',
+            'updated_count': updated
+        })
