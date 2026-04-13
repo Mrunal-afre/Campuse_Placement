@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base URL for all API calls — points to Django
 const API = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
 });
 
 // Automatically attach the JWT token to every request if user is logged in

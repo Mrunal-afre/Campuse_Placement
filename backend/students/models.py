@@ -11,6 +11,8 @@ class StudentProfile(models.Model):
     ]
 
     BRANCH_CHOICES = [
+        ('BCA',         'Bachelor of Computer Application'),  
+        ('BBA',         'Business Management'),               
         ('cs',      'Computer Science'),
         ('it',      'Information Technology'),
         ('entc',    'Electronics & Telecom'),
@@ -34,6 +36,7 @@ class StudentProfile(models.Model):
     year_of_passing = models.IntegerField(null=True, blank=True)
     cgpa           = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     skills         = models.TextField(blank=True)   # stored as comma-separated: "Python,React,SQL"
+    experiences = models.TextField(blank=True, default='')
     about          = models.TextField(blank=True)
     linkedin_url   = models.URLField(blank=True)
     github_url     = models.URLField(blank=True)
@@ -46,3 +49,6 @@ class StudentProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.full_name}"
+
+active_backlog = models.BooleanField(null=True, blank=True, default=None)
+

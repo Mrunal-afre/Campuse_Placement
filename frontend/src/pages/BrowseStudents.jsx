@@ -1,21 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate }                       from 'react-router-dom';
-import { getAllStudents }                     from '../api/auth';
-import { useAuth }                           from '../context/AuthContext';
+import { useState, useEffect } from 'react';
+import { useNavigate }         from 'react-router-dom';
+import { getAllStudents }       from '../api/auth';
+import { useAuth }             from '../context/AuthContext';
 
 const BRANCHES = [
   { value: '',           label: 'All Branches' },
+  { value: 'BCA',        label: 'Bachelor of Computer Application' },  // ← NEW
+  { value: 'BBA',        label: 'Business Management' },               // ← NEW
   { value: 'cs',         label: 'Computer Science' },
   { value: 'it',         label: 'Information Technology' },
   { value: 'entc',       label: 'Electronics & Telecom' },
   { value: 'mech',       label: 'Mechanical' },
   { value: 'civil',      label: 'Civil' },
   { value: 'electrical', label: 'Electrical' },
+  { value: 'other',      label: 'Other' },
 ];
 
-const BRANCH_LABELS = {
+// Pretty label for branch value
+const BRANCH_LABEL = {
+  BCA: 'BCA', BBA: 'BBA',
   cs: 'CS', it: 'IT', entc: 'ENTC',
-  mech: 'Mech', civil: 'Civil', electrical: 'Electrical',
+  mech: 'Mech', civil: 'Civil', electrical: 'Electrical', other: 'Other',
 };
 
 export default function BrowseStudents() {
@@ -27,15 +32,16 @@ export default function BrowseStudents() {
   const [message,   setMessage]   = useState('');
 
   // Filter state
-  const [search,    setSearch]    = useState('');
-  const [branch,    setBranch]    = useState('');
-  const [minCgpa,   setMinCgpa]   = useState('');
-  const [maxCgpa,   setMaxCgpa]   = useState('');
-  const [skill,     setSkill]     = useState('');
-  const [year,      setYear]      = useState('');
+  const [search,        setSearch]        = useState('');
+  const [branch,        setBranch]        = useState('');
+  const [minCgpa,       setMinCgpa]       = useState('');
+  const [maxCgpa,       setMaxCgpa]       = useState('');
+  const [skill,         setSkill]         = useState('');
+  const [year,          setYear]          = useState('');
+  const [backlogFilter, setBacklogFilter] = useState(''); // '' | 'yes' | 'no'
 
   // Selected student for side panel
-  const [selected,  setSelected]  = useState(null);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'recruiter') {
@@ -47,12 +53,14 @@ export default function BrowseStudents() {
 
   const buildQuery = () => {
     const params = new URLSearchParams();
-    if (search)  params.append('search',         search);
-    if (branch)  params.append('branch',         branch);
-    if (minCgpa) params.append('min_cgpa',       minCgpa);
-    if (maxCgpa) params.append('max_cgpa',       maxCgpa);
-    if (skill)   params.append('skill',          skill);
-    if (year)    params.append('year_of_passing', year);
+    if (search)        params.append('search',          search);
+    if (branch)        params.append('branch',          branch);
+    if (minCgpa)       params.append('min_cgpa',        minCgpa);
+    if (maxCgpa)       params.append('max_cgpa',        maxCgpa);
+    if (skill)         params.append('skill',           skill);
+    if (year)          params.append('year_of_passing', year);
+    if (backlogFilter) params.append('active_backlog',
+                         backlogFilter === 'yes' ? 'true' : 'false');
     const q = params.toString();
     return q ? `?${q}` : '';
   };
@@ -74,10 +82,10 @@ export default function BrowseStudents() {
   const handleReset = () => {
     setSearch(''); setBranch(''); setMinCgpa('');
     setMaxCgpa(''); setSkill(''); setYear('');
+    setBacklogFilter('');
     fetchStudents('');
   };
 
-  // Skills as chips
   const parseSkills = (skills) =>
     skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : [];
 
@@ -116,9 +124,11 @@ export default function BrowseStudents() {
         </div>
 
         {/* ── Filter Panel ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100
+                        p-5 mb-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
 
+            {/* Search */}
             <div className="lg:col-span-2">
               <label className="flabel">Search by Name</label>
               <input type="text" value={search}
@@ -128,6 +138,7 @@ export default function BrowseStudents() {
                 className="finput" />
             </div>
 
+            {/* Branch — now includes BCA & BBA */}
             <div>
               <label className="flabel">Branch</label>
               <select value={branch} onChange={e => setBranch(e.target.value)}
@@ -138,6 +149,7 @@ export default function BrowseStudents() {
               </select>
             </div>
 
+            {/* Min CGPA */}
             <div>
               <label className="flabel">Min CGPA</label>
               <input type="number" value={minCgpa}
@@ -146,14 +158,7 @@ export default function BrowseStudents() {
                 className="finput" />
             </div>
 
-            <div>
-              <label className="flabel">Max CGPA</label>
-              <input type="number" value={maxCgpa}
-                onChange={e => setMaxCgpa(e.target.value)}
-                placeholder="e.g. 10.0" step="0.1" min="0" max="10"
-                className="finput" />
-            </div>
-
+            {/* Skill */}
             <div>
               <label className="flabel">Skill</label>
               <input type="text" value={skill}
@@ -162,6 +167,7 @@ export default function BrowseStudents() {
                 className="finput" />
             </div>
 
+            {/* Passing Year */}
             <div>
               <label className="flabel">Passing Year</label>
               <input type="number" value={year}
@@ -172,6 +178,27 @@ export default function BrowseStudents() {
 
           </div>
 
+          {/* ── Active Backlog Filter row ── */}
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <span className="flabel mb-0">Active Backlog:</span>
+            {[
+              { val: '',    label: 'All Students'   },
+              { val: 'yes', label: '⚠️ Has Backlog'  },
+              { val: 'no',  label: '✅ No Backlog'   },
+            ].map(opt => (
+              <button key={opt.val} type="button"
+                onClick={() => setBacklogFilter(opt.val)}
+                className={`text-xs font-semibold px-4 py-2 rounded-xl
+                             border transition
+                             ${backlogFilter === opt.val
+                               ? 'bg-violet-600 text-white border-violet-600'
+                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-violet-300'
+                             }`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-2 mt-4 justify-end">
             <button onClick={handleReset}
               className="px-4 py-2 rounded-xl text-sm font-medium
@@ -180,7 +207,8 @@ export default function BrowseStudents() {
             </button>
             <button onClick={handleFilter}
               className="px-5 py-2 rounded-xl text-sm font-semibold
-                         bg-violet-600 hover:bg-violet-700 text-white transition shadow-sm">
+                         bg-violet-600 hover:bg-violet-700 text-white
+                         transition shadow-sm">
               🔍 Search
             </button>
           </div>
@@ -202,7 +230,8 @@ export default function BrowseStudents() {
               <div className="flex items-center justify-center py-24">
                 <div className="text-center">
                   <div className="w-10 h-10 border-4 border-violet-500
-                                  border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                                  border-t-transparent rounded-full
+                                  animate-spin mx-auto mb-3" />
                   <p className="text-slate-500 text-sm">Loading students...</p>
                 </div>
               </div>
@@ -225,7 +254,9 @@ export default function BrowseStudents() {
                     student={student}
                     isSelected={selected?.id === student.id}
                     onClick={() =>
-                      setSelected(selected?.id === student.id ? null : student)
+                      setSelected(
+                        selected?.id === student.id ? null : student
+                      )
                     }
                     parseSkills={parseSkills}
                   />
@@ -269,6 +300,8 @@ export default function BrowseStudents() {
 function StudentCard({ student, isSelected, onClick, parseSkills }) {
   const skills = parseSkills(student.skills).slice(0, 3);
 
+  const backlogVal = student.active_backlog;
+
   return (
     <div
       onClick={onClick}
@@ -280,8 +313,8 @@ function StudentCard({ student, isSelected, onClick, parseSkills }) {
 
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-full bg-violet-50
-                        flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center
+                        justify-center flex-shrink-0 overflow-hidden">
           {student.profile_photo_url
             ? <img src={student.profile_photo_url} alt=""
                    className="w-full h-full object-cover" />
@@ -300,7 +333,7 @@ function StudentCard({ student, isSelected, onClick, parseSkills }) {
             {student.branch && (
               <span className="text-xs bg-violet-50 text-violet-700
                                font-semibold px-2 py-0.5 rounded-full uppercase">
-                {student.branch}
+                {BRANCH_LABEL[student.branch] || student.branch}
               </span>
             )}
             {student.cgpa && (
@@ -312,6 +345,19 @@ function StudentCard({ student, isSelected, onClick, parseSkills }) {
             {student.year_of_passing && (
               <span className="text-xs text-slate-400">
                 Batch {student.year_of_passing}
+              </span>
+            )}
+            {/* Backlog badge on card */}
+            {backlogVal === true && (
+              <span className="text-xs bg-red-50 text-red-500 font-semibold
+                               px-2 py-0.5 rounded-full">
+                ⚠️ Backlog
+              </span>
+            )}
+            {backlogVal === false && (
+              <span className="text-xs bg-emerald-50 text-emerald-600
+                               font-semibold px-2 py-0.5 rounded-full">
+                ✅ No Backlog
               </span>
             )}
           </div>
@@ -345,7 +391,8 @@ function StudentCard({ student, isSelected, onClick, parseSkills }) {
 
 /* ── Student Detail Side Panel ── */
 function StudentDetailPanel({ student, onClose, parseSkills, navigate }) {
-  const skills = parseSkills(student.skills);
+  const skills    = parseSkills(student.skills);
+  const backlogVal = student.active_backlog;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100
@@ -364,8 +411,8 @@ function StudentDetailPanel({ student, onClose, parseSkills, navigate }) {
 
       {/* Photo + name */}
       <div className="p-5 text-center border-b border-slate-100">
-        <div className="w-20 h-20 rounded-full bg-violet-50
-                        mx-auto mb-3 overflow-hidden flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-violet-50 mx-auto mb-3
+                        overflow-hidden flex items-center justify-center">
           {student.profile_photo_url
             ? <img src={student.profile_photo_url} alt=""
                    className="w-full h-full object-cover" />
@@ -380,12 +427,14 @@ function StudentDetailPanel({ student, onClose, parseSkills, navigate }) {
         {/* Key stats */}
         <div className="grid grid-cols-3 gap-2 mt-4">
           <div className="bg-slate-50 rounded-xl p-2 text-center">
-            <p className="text-lg font-bold text-violet-600">{student.cgpa || '—'}</p>
+            <p className="text-lg font-bold text-violet-600">
+              {student.cgpa || '—'}
+            </p>
             <p className="text-xs text-slate-400">CGPA</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-2 text-center">
-            <p className="text-lg font-bold text-slate-700 uppercase">
-              {student.branch || '—'}
+            <p className="text-sm font-bold text-slate-700 uppercase">
+              {BRANCH_LABEL[student.branch] || student.branch || '—'}
             </p>
             <p className="text-xs text-slate-400">Branch</p>
           </div>
@@ -395,6 +444,29 @@ function StudentDetailPanel({ student, onClose, parseSkills, navigate }) {
             </p>
             <p className="text-xs text-slate-400">Batch</p>
           </div>
+        </div>
+
+        {/* ── Active Backlog in side panel ── */}
+        <div className="mt-3">
+          {backlogVal === true && (
+            <span className="inline-block text-xs font-semibold px-3 py-1.5
+                             rounded-full bg-red-50 text-red-600
+                             border border-red-200">
+              ⚠️ Has Active Backlog
+            </span>
+          )}
+          {backlogVal === false && (
+            <span className="inline-block text-xs font-semibold px-3 py-1.5
+                             rounded-full bg-emerald-50 text-emerald-700
+                             border border-emerald-200">
+              ✅ No Active Backlog
+            </span>
+          )}
+          {backlogVal === null || backlogVal === undefined ? (
+            <span className="inline-block text-xs text-slate-400 italic">
+              Backlog status not filled
+            </span>
+          ) : null}
         </div>
       </div>
 
