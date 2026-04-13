@@ -111,6 +111,17 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv()
 )
 
+# ── CSRF Trusted Origins ──────────────────────────────────────────  
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:3000',
+    cast=Csv()
+)
+
+# ── Session & CSRF Cookie settings ───────────────────────────────
+CSRF_COOKIE_SECURE    = config('CSRF_COOKIE_SECURE',    default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+
 # ── Static & Media ────────────────────────────────────────────────
 STATIC_URL  = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
